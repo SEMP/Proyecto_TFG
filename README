@@ -1,0 +1,24 @@
+Conjunto de Proyectos Java
+
+UTILIDADES:
+	Conjunto de clases con utilidades varias.
+
+BASE_DATOS:
+	Conjunto de clases para conexión a base de datos.
+	Depende del las clases de UTILIDADES.
+
+AG_LIB:
+	Conjunto clases para programación utlizando algoritmos genéticos.
+	Depende del las clases de UTILIDADES.
+
+HORARIOS_EXAMEN:
+	Proyecto de cálculo del mejor horario de examenes utilizando los algorítmos genéticos.
+	Depende de las clases de UTILIDADES, BASE_DATOS y AG_LIB.
+
+PRUEBAS:
+	Proyecto para realizar pruebas de código.
+	Depende de las clases de UTILIDADES y BASE_DATOS.
+
+PRUEBA_AG:
+	Proyecto para realizar pruebas de código.
+	Depende de las clases de UTILIDADES y AG_LIB.
