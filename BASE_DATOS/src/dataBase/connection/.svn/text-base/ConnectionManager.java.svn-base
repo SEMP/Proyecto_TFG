@@ -1,0 +1,76 @@
+package baseDatos.conexion;
+
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+
+import exceptions.ObjetoNoEncontrado;
+
+public final class ConnectionManager 
+{
+	private static Map<Thread, ConexionBD> listaConexiones= new HashMap<Thread, ConexionBD>();
+	
+	private ConnectionManager()
+	{
+		super();
+	}
+	
+	public static ConexionBD getConnection() throws ClassNotFoundException, SQLException, ObjetoNoEncontrado
+	{
+		Thread t = Thread.currentThread();
+		
+		synchronized (listaConexiones)
+		{
+			ConexionBD conexion = (ConexionBD)listaConexiones.get(t);
+			if(conexion == null)
+			{
+				conexion = new ConexionBD();
+				conexion.conectar();
+				listaConexiones.put(t, conexion);
+			}
+			listaConexiones.notifyAll();
+			return conexion;
+		}
+	}
+	
+	public static ConexionBD getConnection(GestorBD gestorBD, String baseDatos, String usuario, String senha, String host) throws ClassNotFoundException, SQLException
+	{
+		Thread t = Thread.currentThread();
+		
+		synchronized (listaConexiones)
+		{
+			ConexionBD conexionActual = (ConexionBD)listaConexiones.get(t);
+			ConexionBD conexionNueva = new ConexionBD(gestorBD, baseDatos, usuario, senha, host);
+			
+			if(conexionNueva.equals(conexionActual))
+			{
+				listaConexiones.notifyAll();
+				return conexionActual;
+			}
+			
+			if(conexionActual != null) conexionActual.desconectar();
+			
+			conexionNueva.conectar();
+			listaConexiones.put(t, conexionNueva);
+			
+			listaConexiones.notifyAll();
+			return conexionNueva;
+		}
+	}
+	
+	public static void closeConnection() throws SQLException
+	{
+		Thread t = Thread.currentThread();
+		
+		synchronized (listaConexiones)
+		{
+			ConexionBD conexion = (ConexionBD)listaConexiones.get(t);
+			if (conexion != null)
+			{
+				conexion.desconectar();
+				listaConexiones.remove(t);
+				listaConexiones.notifyAll();
+			}
+		}
+	}
+}

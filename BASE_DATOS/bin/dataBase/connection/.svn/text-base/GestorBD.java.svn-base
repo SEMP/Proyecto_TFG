@@ -1,0 +1,26 @@
+package baseDatos.conexion;
+
+public enum GestorBD 
+{
+	MYSQL("org.gjt.mm.mysql.Driver", "jdbc:mysql://"),
+	POSTGRES("org.postgresql.Driver", "jdbc:postgresql://");
+	
+	private final String driver;
+	private final String url;
+	
+	private GestorBD(String driver, String url)
+	{
+		this.driver = driver;
+		this.url = url;
+	}
+
+	public String getDriver()
+	{
+		return driver;
+	}
+
+	public String getUrl()
+	{
+		return url;
+	}
+}

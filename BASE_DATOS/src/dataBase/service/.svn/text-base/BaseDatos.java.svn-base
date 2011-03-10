@@ -1,0 +1,418 @@
+package baseDatos.servicio;
+
+import exceptions.DataBaseException;
+import exceptions.ObjetoNoEncontrado;
+import general.AlmacenDatos;
+import general.Comparador;
+import general.Tabla;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Date;
+import java.util.List;
+
+import varios.ComparadorString;
+import varios.Utilidades;
+import baseDatos.conexion.ConexionBD;
+import baseDatos.conexion.ConnectionManager;
+import configuracion.Variables;
+
+public final class BaseDatos implements AlmacenDatos 
+{
+	private ConexionBD conexion;
+	private boolean debug;
+	
+	public BaseDatos()
+	{
+		super();
+		this.debug = false;
+	}
+
+	@Override
+	public int insertar(Tabla tabla) throws ClassNotFoundException, SQLException, ObjetoNoEncontrado
+	{
+		this.conexion = ConnectionManager.getConnection();
+		StringBuffer sql = new StringBuffer();
+		int cantidadCampos = tabla.getCantidadCampos();
+		boolean agregarComa;
+		List<Object> valorCampos = Utilidades.getListInstance();
+		
+		sql.append("INSERT INTO ");
+		sql.append(Variables.getVariableString("schema")).append(".");
+		sql.append(tabla.getNombreTabla()).append("(");
+		
+		agregarComa = false;
+		for (int i = 0; i < cantidadCampos; i++)
+		{
+			if(tabla.getCampo(i) != null)
+			{
+				if(!agregarComa) agregarComa = true;
+				else sql.append(", ");
+				
+				sql.append(tabla.getNombreCampo(i));
+			}
+		}
+		
+		sql.append(") VALUES (");
+
+		agregarComa = false;
+		for (int i = 0; i < cantidadCampos; i++)
+		{
+			if(tabla.getCampo(i) != null)
+			{
+				if(!agregarComa) agregarComa = true;
+				else sql.append(", ");
+				
+				sql.append("?");
+				valorCampos.add(tabla.getCampo(i));
+			}
+		}
+		
+		sql.append(")");
+		
+		if(this.debug) System.out.println(sql);
+		
+		int rowCount = this.conexion.ejecutarUpdate(sql.toString(), valorCampos.toArray());
+		return rowCount;
+	}
+	
+	@Override
+	public int actualizar(Tabla tabla) throws ClassNotFoundException, SQLException, ObjetoNoEncontrado, DataBaseException
+	{
+		this.conexion = ConnectionManager.getConnection();
+		StringBuffer sql = new StringBuffer();
+		int cantidadCampos = tabla.getCantidadCampos();
+		int[] clavesPrimarias = tabla.getClavesPrimarias();
+		List<Object> valorCampos = Utilidades.getListInstance();
+		boolean agregarAND, agregarComa;
+		
+		sql.append("UPDATE ");
+		sql.append(Variables.getVariableString("schema")).append(".");
+		sql.append(tabla.getNombreTabla());
+		
+		agregarComa = false;
+		for (int i = 0; i < cantidadCampos; i++)
+		{
+			if(tabla.getCampo(i) != null && !Utilidades.arrayContains(tabla.getClavesPrimarias(), i))
+			{
+				if(!agregarComa)
+				{
+					agregarComa = true;
+					sql.append(" SET ");
+				}
+				else sql.append(", ");
+				
+				sql.append(tabla.getNombreCampo(i)).append(" = ?");
+				valorCampos.add(tabla.getCampo(i));
+			}
+		}
+		
+		if(!agregarComa) throw new DataBaseException("No hay campos que actualizar");
+		
+		sql.append(" WHERE ");
+		
+		agregarAND = false;
+		for (int i = 0; i < clavesPrimarias.length; i++) 
+		{
+			if(!agregarAND) agregarAND = true;
+			else sql.append(" AND ");
+			
+			sql.append(tabla.getNombreCampo(clavesPrimarias[i]));
+			sql.append(" = ?");
+			
+			valorCampos.add(tabla.getCampo(clavesPrimarias[i]));
+		}
+		
+		if(this.debug) System.out.println(sql);
+		
+		int rowCount = this.conexion.ejecutarUpdate(sql.toString(), valorCampos.toArray());
+		return rowCount;
+	}
+
+	@Override
+	public int eliminar(Tabla tabla) throws ClassNotFoundException, SQLException, ObjetoNoEncontrado
+	{
+		this.conexion = ConnectionManager.getConnection();
+		StringBuffer sql = new StringBuffer();
+		int[] clavesPrimarias = tabla.getClavesPrimarias();
+		Object[] valorCamposClave = new Object[clavesPrimarias.length];
+		boolean agregarAND;
+		
+		sql.append("DELETE FROM ");
+		sql.append(Variables.getVariableString("schema")).append(".");
+		sql.append(tabla.getNombreTabla());
+		sql.append(" WHERE ");
+		
+		agregarAND = false;
+		for (int i = 0; i < clavesPrimarias.length; i++) 
+		{
+			if(!agregarAND) agregarAND = true;
+			else sql.append(" AND ");
+			
+			sql.append(tabla.getNombreCampo(clavesPrimarias[i]));
+			sql.append(" = ?");
+			
+			valorCamposClave[i] = tabla.getCampo(clavesPrimarias[i]);
+		}
+		
+		if(this.debug) System.out.println(sql);
+		
+		int rowCount = this.conexion.ejecutarUpdate(sql.toString(), valorCamposClave);
+		return rowCount;
+	}
+
+	/**
+	 * Carga valores de la base de datos a las tablas consultando
+	 * con las claves primarias de la tabla, y utiliza recursividad
+	 * para cargar los datos de las claves foraneas (<b>se asume que
+	 * las tablas foraneas constan con exactamente 1 clave primaria</b>)
+	 * @author Sergio Morel
+	 */
+	@Override
+	public Tabla cargar(Tabla tabla) throws ClassNotFoundException, SQLException, ObjetoNoEncontrado, DataBaseException
+	{
+		this.conexion = ConnectionManager.getConnection();
+		StringBuffer sql = new StringBuffer();
+		int cantidadCampos = tabla.getCantidadCampos();
+		int[] clavesPrimarias = tabla.getClavesPrimarias();
+		int[] clavesForaneas = tabla.getClavesForaneas();
+		Object[] valorCamposClave = new Object[clavesPrimarias.length];
+		boolean agregarComa, agregarAND;
+		
+		sql.append("SELECT ");
+		
+		agregarComa = false;
+		for (int i = 0; i < cantidadCampos; i++)
+		{
+			if(!Utilidades.arrayContains(clavesPrimarias, i))
+			{
+				if(!agregarComa) agregarComa = true;
+				else sql.append(", ");
+				
+				sql.append(tabla.getNombreCampo(i));
+			}
+		}
+		
+		if(!agregarComa) throw new DataBaseException("No hay campos que cargar");
+		
+		sql.append(" FROM ");
+		sql.append(Variables.getVariableString("schema")).append(".");
+		sql.append(tabla.getNombreTabla());
+		sql.append(" WHERE ");
+		
+		agregarAND = false;
+		for (int i = 0; i < clavesPrimarias.length; i++) 
+		{
+			if(!agregarAND) agregarAND = true;
+			else sql.append(" AND ");
+			
+			sql.append(tabla.getNombreCampo(clavesPrimarias[i]));
+			sql.append(" = ?");
+			
+			valorCamposClave[i] = tabla.getCampo(clavesPrimarias[i]);
+		}
+		
+		if(this.debug) System.out.println(sql);
+		
+		ResultSet rs = this.conexion.ejecutarConsulta(sql.toString(), valorCamposClave);
+		
+		if(!this.cargarResultsetTabla(rs, tabla)) throw new DataBaseException(tabla.tablaToDatos().getClass().getSimpleName() + " no existe");
+		
+		for (int i = 0; i < clavesForaneas.length; i++) 
+		{
+			if(tabla.getCampo(clavesForaneas[i]) != null)
+			{
+				Tabla tablaForanea = tabla.getTablaForanea(i);
+				tablaForanea.setCampo(tabla.getCampo(clavesForaneas[i]), tablaForanea.getClavesPrimarias()[0]);
+				this.cargar(tablaForanea);
+			}
+		}
+		
+		rs.getStatement().close();
+		
+		return tabla;
+	}
+
+	@Override
+	public Tabla[] consultar(Tabla tabla, Comparador[] comparadores) throws ClassNotFoundException, SQLException, ObjetoNoEncontrado, DataBaseException
+	{
+		this.conexion = ConnectionManager.getConnection();
+		StringBuffer sql = new StringBuffer();
+		int cantidadCampos = tabla.getCantidadCampos();
+		boolean agregarComa, agregarWHERE;
+		List<Object> valorCampos = Utilidades.getListInstance();
+		Tabla[] resultado;
+		
+		sql.append("SELECT ");
+		
+		agregarComa = false;
+		for (int i = 0; i < cantidadCampos; i++)
+		{
+			if(!agregarComa) agregarComa = true;
+			else sql.append(", ");
+			
+			sql.append(tabla.getNombreCampo(i));
+		}
+		
+		sql.append(" FROM ");
+		sql.append(Variables.getVariableString("schema")).append(".");
+		sql.append(tabla.getNombreTabla());
+		
+		agregarWHERE = true;
+		for (int i = 0; comparadores != null && i < comparadores.length; i++) 
+		{
+			if(comparadores[i] != null && tabla.getCampo(i) != null)
+			{
+				if(comparadores[i] instanceof ComparadorString && !(tabla.getCampo(i) instanceof String))
+				{
+					throw new DataBaseException("Solo se pueden usar los comparadores String con datos tipo String");
+				}
+				
+				if(tabla.getCampo(i) instanceof String && !(comparadores[i] instanceof ComparadorString))
+				{
+					throw new DataBaseException("los datos tipo String deben compararse con comparadores String");
+				}
+				
+				if(tabla.getCampo(i) instanceof String && comparadores[i] instanceof ComparadorString)
+				{
+					tabla.setCampo(((ComparadorString)comparadores[i]).prepararDato((String)tabla.getCampo(i)), i);
+				}
+				
+				if(agregarWHERE)
+				{
+					agregarWHERE = false;
+					sql.append(" WHERE ");
+				}
+				else
+				{
+					sql.append(" AND ");
+				}
+				
+				sql.append(comparadores[i].comparar(tabla.getNombreCampo(i), "?"));
+				valorCampos.add(tabla.getCampo(i));
+			}
+		}
+		
+		if(this.debug) System.out.println(sql);
+		
+		ResultSet rs = this.conexion.ejecutarConsulta(sql.toString(), valorCampos.toArray());
+		
+		resultado = this.resultsetToArray(rs, tabla);
+		
+		for (int i = 0; i < resultado.length; i++)
+		{
+			int[] clavesForaneas = resultado[i].getClavesForaneas();
+			for (int j = 0; j < clavesForaneas.length; j++) 
+			{
+				if(resultado[i].getCampo(clavesForaneas[j]) != null)
+				{
+					Tabla tablaForanea = resultado[i].getTablaForanea(j);
+					tablaForanea.setCampo(resultado[i].getCampo(clavesForaneas[j]), tablaForanea.getClavesPrimarias()[0]);
+					this.cargar(tablaForanea);
+				}
+			}
+		}
+		
+		rs.getStatement().close();
+		
+		return resultado;
+	}
+	
+	@Override
+	public void commit() throws SQLException
+	{
+		this.conexion.commit();
+	}
+	
+	@Override
+	public void rollback() throws SQLException
+	{
+		this.conexion.rollback();
+	}
+	
+	@Override
+	public void desconectar() throws SQLException
+	{
+		ConnectionManager.closeConnection();
+	}
+	
+	public void setDebug(boolean debug)
+	{
+		this.debug = debug;
+	}
+	
+	private boolean cargarResultsetTabla(ResultSet rs, Tabla tabla) throws SQLException
+	{
+		int cantidadCampos = tabla.getCantidadCampos();
+		int[] clavesPrimarias = tabla.getClavesPrimarias();
+		if(!rs.next())
+		{
+			return false;
+		}
+		else
+		{
+			for(int i = 0; i < cantidadCampos; i++)
+			{
+				if(!Utilidades.arrayContains(clavesPrimarias, i))
+				{
+					if(tabla.getTipoCampo(i).equals(String.class))
+					{
+						tabla.setCampo(rs.getString(tabla.getNombreCampo(i)), i);
+					}
+					else if(tabla.getTipoCampo(i).equals(Integer.class))
+					{
+						tabla.setCampo(rs.getInt(tabla.getNombreCampo(i)), i);
+					}
+					else if(tabla.getTipoCampo(i).equals(Double.class))
+					{
+						tabla.setCampo(rs.getDouble(tabla.getNombreCampo(i)), i);
+					}
+					else if(tabla.getTipoCampo(i).equals(Date.class))
+					{
+						java.sql.Date sqlDate = rs.getDate(tabla.getNombreCampo(i));
+						tabla.setCampo(new Date(sqlDate.getTime()), i);
+					}
+				}
+			}
+			
+			return true;
+		}
+	}
+	
+	private Tabla[] resultsetToArray(ResultSet rs, Tabla tabla) throws SQLException
+	{
+		List<Tabla> listaResultados = Utilidades.getListInstance();
+		
+		while(rs.next())
+		{
+			Tabla resultado = tabla.getNewInstance();
+			
+			for(int i = 0; i < resultado.getCantidadCampos(); i++)
+			{
+				if(resultado.getTipoCampo(i).equals(String.class))
+				{
+					resultado.setCampo(rs.getString(resultado.getNombreCampo(i)), i);
+				}
+				else if(resultado.getTipoCampo(i).equals(Integer.class))
+				{
+					resultado.setCampo(rs.getInt(resultado.getNombreCampo(i)), i);
+				}
+				else if(resultado.getTipoCampo(i).equals(Double.class))
+				{
+					resultado.setCampo(rs.getDouble(resultado.getNombreCampo(i)), i);
+				}
+				else if(resultado.getTipoCampo(i).equals(Date.class))
+				{
+					java.sql.Date sqlDate = rs.getDate(resultado.getNombreCampo(i));
+					resultado.setCampo(new Date(sqlDate.getTime()), i);
+				}
+			}
+			
+			listaResultados.add(resultado);
+		}
+		
+		Tabla[] resultados = listaResultados.toArray(new Tabla[listaResultados.size()]);
+		
+		return resultados;
+	}
+}
