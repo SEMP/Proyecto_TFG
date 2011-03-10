@@ -5,6 +5,7 @@ import dataBase.connection.DBConnector;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 
 import utilidades.exceptions.DataAccessException;
@@ -85,6 +86,7 @@ public class DataBase implements DataAccessObject
 			sql.append(")");
 			
 			Debug.imprimir(sql);
+			Debug.agregar(Arrays.toString(fieldValues.toArray()));
 			
 			int rowCount = this.conexion.ejecutarUpdate(sql.toString(), fieldValues.toArray());
 			
@@ -167,6 +169,7 @@ public class DataBase implements DataAccessObject
 			}
 			
 			Debug.imprimir(sql);
+			Debug.agregar(Arrays.toString(fieldValues.toArray()));
 			
 			int rowCount = this.conexion.ejecutarUpdate(sql.toString(), fieldValues.toArray());
 			
@@ -224,6 +227,7 @@ public class DataBase implements DataAccessObject
 			}
 			
 			Debug.imprimir(sql);
+			Debug.agregar(Arrays.toString(primaryKeyValues));
 			
 			int rowCount = this.conexion.ejecutarUpdate(sql.toString(), primaryKeyValues);
 			
@@ -307,6 +311,7 @@ public class DataBase implements DataAccessObject
 			}
 			
 			Debug.imprimir(sql);
+			Debug.agregar(Arrays.toString(primaryKeyValues));
 			
 			ResultSet rs = this.conexion.ejecutarConsulta(sql.toString(), primaryKeyValues);
 			
@@ -445,6 +450,7 @@ public class DataBase implements DataAccessObject
 			}
 			
 			Debug.imprimir(sql);
+			Debug.agregar(Arrays.toString(fieldValues.toArray()));
 			
 			ResultSet rs = this.conexion.ejecutarConsulta(sql.toString(), fieldValues.toArray());
 			

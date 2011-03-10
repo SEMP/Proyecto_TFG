@@ -21,7 +21,7 @@ public class HorariosDAO extends DataBase
 
 	public Double getDificultad(String codigoMateria) throws DataAccessException
 	{
-		String sql = "SELECT materia, porciento FROM v_informe_resumen('v','200902',8)";
+		String sql = "SELECT materia, porciento FROM v_informe_resumen('v', '200902', 8)";
 		
 		Double dificultad;
 		
