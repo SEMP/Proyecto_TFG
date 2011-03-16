@@ -4,6 +4,7 @@ import dataBase.connection.ConnectionManager;
 import dataBase.connection.DBConnector;
 
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
@@ -483,6 +484,66 @@ public class DataBase implements DataAccessObject
 		catch (Exception e)
 		{
 			throw new DataAccessException(e);
+		}
+	}
+	
+	public static void imprimirResultSet(ResultSet rs) throws SQLException, ClassNotFoundException
+	{
+		int elemento = 1;
+		
+		ResultSetMetaData rsmd = rs.getMetaData();
+		int columnas = rsmd.getColumnCount();
+		
+		for(int i = 1; i <= columnas; i++)
+		{
+			System.out.print(rsmd.getColumnName(i));
+			System.out.print(" | ");
+		}
+		
+		System.out.println();
+		
+		while(rs.next())
+		{
+			Object[] fieldValues = new Object[columnas];
+			
+			for(int i = 1; i <= columnas; i++)
+			{
+				String className = rsmd.getColumnClassName(i);
+				Class<?> tipoDato = Class.forName(className);
+				
+				if(tipoDato.equals(String.class))
+				{
+					fieldValues[i - 1] = rs.getString(rsmd.getColumnName(i));
+				}
+				else if(tipoDato.equals(Integer.class))
+				{
+					fieldValues[i - 1] = rs.getInt(rsmd.getColumnName(i));
+				}
+				else if(tipoDato.equals(Double.class))
+				{
+					fieldValues[i - 1] = rs.getDouble(rsmd.getColumnName(i));
+				}
+				else if(tipoDato.equals(java.sql.Time.class))
+				{
+					java.sql.Time sqlTime = rs.getTime(rsmd.getColumnName(i));
+					fieldValues[i - 1] = sqlTime;
+				}
+				else
+				{
+					fieldValues[i - 1] = rs.getObject(rsmd.getColumnName(i));
+				}
+			}
+
+			System.out.print((elemento++) + ". ");
+			for (int i = 0; i < fieldValues.length; i++)
+			{
+				if(fieldValues[i] != null)
+					System.out.print(fieldValues[i].toString().trim());
+				else
+					System.out.print(fieldValues[i]);
+				System.out.print(" | ");
+			}
+			System.out.println();
 		}
 	}
 	
