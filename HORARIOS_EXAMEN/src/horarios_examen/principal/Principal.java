@@ -17,8 +17,6 @@ import utilidades.exceptions.InvalidValueException;
 import utilidades.exceptions.ObjectNotFoundException;
 import utilidades.util.Debug;
 import utilidades.util.Utilidades;
-import utilidades.util.Variables;
-import dataBase.connection.GestorBD;
 
 public class Principal
 {
@@ -26,7 +24,7 @@ public class Principal
 	
 	static
 	{
-		iniciarVariables();
+		Inicializador.iniciarVariables();
 	}
 	
 	public static void main(String[] args) throws InvalidValueException, ObjectNotFoundException, CloneNotSupportedException, ParseException
@@ -88,19 +86,5 @@ public class Principal
 			System.out.println(solucion);
 		}
 		System.out.println();
-	}
-	
-	private static void iniciarVariables()
-	{
-		Variables.setVariableInt("resolucionMinutos", 5);
-		
-		Variables.setVariableString("formatoFecha", "EEEE dd/MM/yyyy - HH:mm");
-		
-		Variables.setVariableString("baseDatos", "alicia");
-		Variables.setVariableString("usuario", "sergiomorel");
-		Variables.setVariableString("senha", "sergio");
-		Variables.setVariableString("host", "172.18.200.7");
-		
-		Variables.setVariableEnum("gestorBD", GestorBD.POSTGRES);
 	}
 }

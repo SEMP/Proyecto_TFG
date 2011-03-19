@@ -11,84 +11,66 @@ public final class Debug
 	
 	public static void imprimir(Object mensaje)
 	{
-		if(debug)
-		{
-			llamadasInternas = 1;
-			System.out.println(addInfo(mensaje.toString()));
-			llamadasInternas = 0;
-		}
+		llamadasInternas = 1;
+		mostrarMensaje(addInfo(mensaje.toString()), true);
+		llamadasInternas = 0;
 	}
 	
 	public static void agregar(Object mensaje)
 	{
-		if(debug)
-		{
-			System.out.println(mensaje);
-		}
+		mostrarMensaje(mensaje.toString(), false);
 	}
 	
 	public static void imprimir(int[] array)
 	{
-		if(debug)
+		StringBuilder sb = new StringBuilder();
+		
+		for(int i = 0; i < array.length; i++)
 		{
-			StringBuffer sb = new StringBuffer();
-			
-			for(int i = 0; i < array.length; i++)
-			{
-				sb.append(array[i]).append(" ");
-			}
-			
-			llamadasInternas = 1;
-			System.out.println(addInfo(sb.toString()));
-			llamadasInternas = 0;
+			sb.append(array[i]).append(" ");
 		}
+		
+		llamadasInternas = 1;
+		mostrarMensaje(addInfo(sb.toString()), true);
+		llamadasInternas = 0;
 	}
 	
 	public static void agregar(int[] array)
 	{
-		if(debug)
+		StringBuilder sb = new StringBuilder();
+		
+		for(int i = 0; i < array.length; i++)
 		{
-			StringBuffer sb = new StringBuffer();
-			
-			for(int i = 0; i < array.length; i++)
-			{
-				sb.append(array[i]).append(" ");
-			}
-			
-			System.out.println(sb.toString());
+			sb.append(array[i]).append(" ");
 		}
+		
+		mostrarMensaje(sb.toString(), false);
 	}
 	
 	public static <E> void imprimir(E[] array)
 	{
-		if(debug)
+		StringBuilder sb = new StringBuilder();
+		
+		for(int i = 0; i < array.length; i++)
 		{
-			StringBuffer sb = new StringBuffer();
-			
-			for(int i = 0; i < array.length; i++)
-			{
-				sb.append(array[i]).append(" ");
-			}
-			
-			llamadasInternas = 1;
-			System.out.println(addInfo(sb.toString()));
-			llamadasInternas = 0;
+			sb.append(array[i]).append(" ");
 		}
+		
+		llamadasInternas = 1;
+		mostrarMensaje(addInfo(sb.toString()), true);
+		llamadasInternas = 0;
 	}
 	
 	public static <E> void agregar(E[] array)
 	{
-		if(debug)
+		StringBuilder sb = new StringBuilder();
+		
+		for(int i = 0; i < array.length; i++)
 		{
-			StringBuffer sb = new StringBuffer();
-			
-			for(int i = 0; i < array.length; i++)
-			{
-				sb.append(array[i]).append(" ");
-			}
-			
-			System.out.println(sb.toString());
+			sb.append(array[i]).append(" ");
 		}
+		
+		mostrarMensaje(sb.toString(), false);
 	}
 	
 	public static void dialogo(Object mensaje)
@@ -107,15 +89,19 @@ public final class Debug
 	
 	public static void dialogo(String mensaje)
 	{
+		llamadasInternas = 1;
+		mostrarMensaje(addInfo(mensaje), true);
+		llamadasInternas = 0;
+		
 		if(debug)
 		{
-			StringBuffer titulo = new StringBuffer();
-			StringBuffer mensajeDialogo = new StringBuffer();
+			StringBuilder titulo = new StringBuilder();
+			StringBuilder mensajeDialogo = new StringBuilder();
 			
 			String metodo = new Throwable().fillInStackTrace().getStackTrace()[llamadasInternas + 1].getMethodName();
 			String clase = new Throwable().getStackTrace()[llamadasInternas + 1].getClassName();
 			
-			titulo.append(clase).append(".").append(metodo).append("()");
+			titulo.append(clase).append("::").append(metodo).append("()");
 			
 			mensajeDialogo.append(Utilidades.dateToString(new Date(), "dd/MM/yyyy HH:mm:ss\n"));
 			mensajeDialogo.append(mensaje);
@@ -132,18 +118,28 @@ public final class Debug
 
 	private static String addInfo(String mensaje)
 	{
-		StringBuffer sb = new StringBuffer("\n");
+		StringBuilder sb = new StringBuilder();
 		
 		String metodo = new Throwable().fillInStackTrace().getStackTrace()[llamadasInternas + 1].getMethodName();
 		String clase = new Throwable().getStackTrace()[llamadasInternas + 1].getClassName();
 		
 		sb.append(Utilidades.dateToString(new Date(), "dd/MM/yyyy HH:mm:ss")).append(" - ");
 		
-		sb.append(clase).append(".");
+		sb.append(clase).append("::");
 		sb.append(metodo).append("()\n");
 		
 		sb.append(mensaje);
-		
+
 		return sb.toString();
+	}
+	
+	private static void mostrarMensaje(String mensaje, final boolean cabecera)
+	{
+		LogToFile.log(mensaje, cabecera);
+		
+		if(debug)
+		{
+			System.out.println(mensaje + "\n");
+		}
 	}
 }

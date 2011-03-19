@@ -4,6 +4,7 @@ public enum GestorBD
 {
 	MYSQL("com.mysql.jdbc.Driver", "jdbc:mysql://<host/>/<baseDatos/>"),
 	POSTGRES("org.postgresql.Driver", "jdbc:postgresql://<host/>/<baseDatos/>");
+	//TODO agregar formato para oracle
 	
 	private final String driver;
 	private final String url;

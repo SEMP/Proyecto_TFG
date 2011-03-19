@@ -1,7 +1,6 @@
 package test;
 
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
 import utilidades.exceptions.DataAccessException;
@@ -23,7 +22,7 @@ public class Prueba
 	public static void main(String[] args) throws Exception
 	{
 		inicializarVariables();
-		prueba2();
+		prueba4();
 	}
 	
 	public static void prueba1() throws DataAccessException
@@ -60,6 +59,7 @@ public class Prueba
 	
 	public static void prueba2() throws ClassNotFoundException, SQLException, ObjectNotFoundException, InstantiationException, IllegalAccessException
 	{
+		Debug.setDebug(true);
 		DBConnector con = ConnectionManager.getConnection();
 		
 		String sql = "SELECT * FROM horario_clase WHERE semestre = 2 AND id_carrera = 4";
@@ -170,6 +170,7 @@ public class Prueba
 	
 	private static void inicializarVariables()
 	{
+		Variables.setVariableString("nombreAplicacion","Horarios de Examen");
 		Variables.setVariableString("formatoFecha", "dd/MM/yyyy");
 		
 		Variables.setVariableString("baseDatos", "alicia");
